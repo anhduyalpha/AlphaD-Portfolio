@@ -1,0 +1,66 @@
+name: Release Portfolio Sites
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build portfolio
+        run: pnpm --filter @workspace/portfolio run build
+        env:
+          PORT: 3000
+          BASE_PATH: /AlphaD-Portfolio/
+      - name: Build obsidian-ember
+        run: pnpm --filter @workspace/obsidian-ember run build
+        env:
+          PORT: 3001
+          BASE_PATH: /AlphaD-Portfolio/obsidian-ember/
+      - name: Prepare release artifacts
+        run: |
+          mkdir -p release-artifacts/portfolio release-artifacts/obsidian-ember
+          cp -R artifacts/portfolio/dist/public/. release-artifacts/portfolio/
+          cp -R artifacts/obsidian-ember/dist/public/. release-artifacts/obsidian-ember/
+          (cd release-artifacts/portfolio && zip -r ../../portfolio-dist.zip .)
+          (cd release-artifacts/obsidian-ember && zip -r ../../obsidian-ember-dist.zip .)
+          owner="${GITHUB_REPOSITORY%%/*}"
+          repo="${GITHUB_REPOSITORY##*/}"
+          pages_base="https://${owner}.github.io/${repo}/"
+          cat > release-info.json <<EOF
+          {
+            "commit": "${GITHUB_SHA}",
+            "pagesBaseUrl": "${pages_base}",
+            "portfolioBasePath": "/${repo}/",
+            "obsidianEmberBasePath": "/${repo}/obsidian-ember/",
+            "generatedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          }
+          EOF
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            portfolio-dist.zip
+            obsidian-ember-dist.zip
+            release-info.json
+          body: |
+            GitHub Pages artifacts for this release:
+            - portfolio-dist.zip (base path /${{ github.event.repository.name }}/)
+            - obsidian-ember-dist.zip (base path /${{ github.event.repository.name }}/obsidian-ember/)
+            - release-info.json (metadata: commit SHA, timestamp, and Pages URL)

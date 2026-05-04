@@ -61,3 +61,9 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **Kind**: Vite component preview server
 - **Port**: 8081
 - **Path**: `/__mockup`
+
+## GitHub Pages
+
+- **Portfolio URL**: https://anhduyalpha.github.io/AlphaD-Portfolio/
+- **Obsidian Ember URL**: https://anhduyalpha.github.io/AlphaD-Portfolio/obsidian-ember/
+- **Release assets**: `portfolio-dist.zip`, `obsidian-ember-dist.zip`, `release-info.json` (commit SHA, timestamp, Pages URL, base paths)
