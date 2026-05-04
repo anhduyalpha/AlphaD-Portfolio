@@ -11,7 +11,7 @@ let port = 5173;
 if (rawPort !== undefined) {
   const parsedPort = Number(rawPort);
 
-  if (!Number.isInteger(parsedPort) || parsedPort < 1 || parsedPort > 65535) {
+  if (!Number.isInteger(parsedPort) || parsedPort < 0 || parsedPort > 65535) {
     throw new Error(`Invalid PORT value: "${rawPort}"`);
   }
 
