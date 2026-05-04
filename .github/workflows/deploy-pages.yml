@@ -1,0 +1,67 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build portfolio
+        run: pnpm --filter @workspace/portfolio run build
+        env:
+          PORT: 3000
+          BASE_PATH: /AlphaD-Portfolio/
+      - name: Build obsidian-ember
+        run: pnpm --filter @workspace/obsidian-ember run build
+        env:
+          PORT: 3001
+          BASE_PATH: /AlphaD-Portfolio/obsidian-ember/
+      - name: Assemble Pages artifact
+        run: |
+          rm -rf pages
+          mkdir -p pages/obsidian-ember
+          cp -R artifacts/portfolio/dist/public/. pages/
+          cp -R artifacts/obsidian-ember/dist/public/. pages/obsidian-ember/
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: pages
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
